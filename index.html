@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPECTRO WEB</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="icon" href="assets/img/logo.jpg" type="image/x-icon">
+</head>
+<body>
+    <div class="dashboard-page">
+        <div class="dashboard-center">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <h1 class="display-4 fw-bold text-light mb-3">
+                        <i class="bi bi-broadcast-pin me-3"></i>SPECTRO WEB
+                    </h1>
+                    <p class="lead text-light-emphasis">Real-time RTL-SDR Spectrum Analyzer</p>
+                    <div class="mt-4">
+                        <span class="connection-status text-warning">
+                            <span class="status-indicator"></span>
+                            <span id="connectionText">Connecting...</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="dashboard-card live-card" onclick="window.location.href='live.html'">
+                        <div class="card-icon">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <h4 class="card-title">Live Spectrum</h4>
+                        <p class="card-description">Real-time spectrum analysis and monitoring</p>
+                    </div>
+                    
+                    <div class="dashboard-card history-card" onclick="window.location.href='history.html'">
+                        <div class="card-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <h4 class="card-title">History</h4>
+                        <p class="card-description">View and analyze recorded sessions</p>
+                    </div>
+                    
+                    <div class="dashboard-card pattern-card" onclick="window.location.href='pattern-test.html'">
+                        <div class="card-icon">
+                            <i class="bi bi-broadcast"></i>
+                        </div>
+                        <h4 class="card-title">Pattern Test</h4>
+                        <p class="card-description">Antenna pattern testing and analysis</p>
+                    </div>
+                </div>
+                
+                <!-- System Status Cards -->
+                <div class="row mt-5">
+                    <div class="col-md-4">
+                        <div class="status-card">
+                            <h6><i class="bi bi-cpu me-2"></i>System Status</h6>
+                            <div id="systemStatus">
+                                <div class="d-flex justify-content-between">
+                                    <span>Backend:</span>
+                                    <span id="backendStatus" class="text-warning">Checking...</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>WebSocket:</span>
+                                    <span id="websocketStatus" class="text-warning">Connecting...</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>RTL-SDR:</span>
+                                    <span id="deviceStatus" class="text-warning">Unknown</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="status-card">
+                            <h6><i class="bi bi-info-circle me-2"></i>Device Info</h6>
+                            <div id="deviceInfo">
+                                <div class="d-flex justify-content-between">
+                                    <span>Device:</span>
+                                    <span id="deviceName">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Frequency:</span>
+                                    <span id="currentFreq">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Sample Rate:</span>
+                                    <span id="currentSampleRate">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="status-card">
+                            <h6><i class="bi bi-gear me-2"></i>Quick Settings</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                                    <i class="bi bi-gear me-1"></i>Settings
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="window.location.href='live.html'">
+                                    <i class="bi bi-play-circle me-1"></i>Start Live
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Backend URL</label>
+                        <input type="text" class="form-control" id="backendUrl" placeholder="http://localhost:5000">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">WebSocket URL</label>
+                        <input type="text" class="form-control" id="websocketUrl" placeholder="ws://localhost:5001">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Update Interval (ms)</label>
+                        <input type="number" class="form-control" id="updateInterval" value="100">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                            <label class="form-check-label" for="autoRefresh">
+                                Auto Refresh
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveSettings">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/websocket-client.js"></script>
+    <script src="assets/js/app.js"></script>
+    
+    <script>
+        // Dashboard-specific initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update status displays
+            const updateSystemStatus = () => {
+                const backendStatus = document.getElementById('backendStatus');
+                const websocketStatus = document.getElementById('websocketStatus');
+                const deviceStatus = document.getElementById('deviceStatus');
+                
+                if (window.spectroApp) {
+                    backendStatus.textContent = window.spectroApp.isConnected ? 'Connected' : 'Disconnected';
+                    backendStatus.className = window.spectroApp.isConnected ? 'text-success' : 'text-danger';
+                    
+                    websocketStatus.textContent = window.spectroApp.ws?.isConnected ? 'Connected' : 'Disconnected';
+                    websocketStatus.className = window.spectroApp.ws?.isConnected ? 'text-success' : 'text-danger';
+                }
+            };
+            
+            // Update device info
+            const updateDeviceInfo = async () => {
+                try {
+                    if (window.spectroApp && window.spectroApp.isConnected) {
+                        const config = await window.spectroApp.getConfig();
+                        
+                        document.getElementById('deviceName').textContent = config.device?.name || 'RTL-SDR';
+                        document.getElementById('currentFreq').textContent = config.frequency?.center 
+                            ? `${(config.frequency.center / 1e6).toFixed(3)} MHz` : '-';
+                        document.getElementById('currentSampleRate').textContent = config.frequency?.sample_rate 
+                            ? `${(config.frequency.sample_rate / 1e6).toFixed(1)} MS/s` : '-';
+                        
+                        document.getElementById('deviceStatus').textContent = 'Connected';
+                        document.getElementById('deviceStatus').className = 'text-success';
+                    }
+                } catch (error) {
+                    console.log('Error updating device info:', error);
+                    document.getElementById('deviceStatus').textContent = 'Error';
+                    document.getElementById('deviceStatus').className = 'text-danger';
+                }
+            };
+            
+            // Update status every 2 seconds
+            setInterval(updateSystemStatus, 2000);
+            setInterval(updateDeviceInfo, 5000);
+            
+            // Initial update
+            setTimeout(updateSystemStatus, 1000);
+            setTimeout(updateDeviceInfo, 2000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - SPECTRO WEB</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="icon" href="assets/img/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm" style="background: linear-gradient(90deg, #232526 0%, #0072ff 100%);">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-broadcast-pin"></i> SPECTRO WEB
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="live.html">
+                            <i class="bi bi-graph-up-arrow"></i> Live Spectrum
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="history.html">
+                            <i class="bi bi-clock-history"></i> History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="pattern-test.html">
+                            <i class="bi bi-broadcast"></i> Pattern Test
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav mb-2 mb-lg-0 align-items-center" style="gap:0.5rem;">
+                    <li class="nav-item">
+                        <span class="badge bg-primary" id="connectionStatus">Connecting...</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary rounded-pill px-3" href="index.html" style="font-weight:600;">
+                            <i class="bi bi-house-door"></i> Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-lg-4">
+                <div class="control-panel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6><i class="bi bi-clock-history me-2"></i>Recording Sessions</h6>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" id="refreshSessions">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" id="clearSessions">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="searchSessions" placeholder="Search sessions...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Date Filter</label>
+                                <input type="date" class="form-control" id="dateFilter">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Duration Filter</label>
+                                <select class="form-select" id="durationFilter">
+                                    <option value="">All Durations</option>
+                                    <option value="short">< 1 minute</option>
+                                    <option value="medium">1-10 minutes</option>
+                                    <option value="long">> 10 minutes</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="sessionsList" class="sessions-list">
+                        <div class="text-center py-3">
+                            <div class="spinner"></div>
+                            <p class="text-muted mt-2">Loading sessions...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-8">
+                <div class="spectrum-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>
+                            <i class="bi bi-graph-up-arrow me-2"></i>
+                            <span id="sessionTitle">Select a Session</span>
+                        </h5>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" id="playBtn" disabled>
+                                <i class="bi bi-play-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" id="pauseBtn" disabled>
+                                <i class="bi bi-pause-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" id="stopBtn" disabled>
+                                <i class="bi bi-stop-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="exportBtn" disabled>
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <input type="range" class="form-range" id="timeSlider" min="0" max="100" value="0" disabled>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex justify-content-between">
+                                    <span id="currentTime">00:00</span>
+                                    <span id="totalTime">00:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">Speed:</span>
+                                    <select class="form-select" id="playbackSpeed">
+                                        <option value="0.25">0.25x</option>
+                                        <option value="0.5">0.5x</option>
+                                        <option value="1" selected>1x</option>
+                                        <option value="2">2x</option>
+                                        <option value="4">4x</option>
+                                        <option value="8">8x</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="loopPlayback">
+                                    <label class="form-check-label" for="loopPlayback">
+                                        Loop Playback
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Session Information Panel -->
+                <div class="control-panel mt-3">
+                    <h6><i class="bi bi-info-circle me-2"></i>Session Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="sessionInfo">
+                                <div class="mb-2">
+                                    <strong>Name:</strong> <span id="sessionName">-</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Date:</strong> <span id="sessionDate">-</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Duration:</strong> <span id="sessionDuration">-</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Samples:</strong> <span id="sessionSamples">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="sessionParams">
+                                <div class="mb-2">
+                                    <strong>Center Frequency:</strong> <span id="sessionCenterFreq">-</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Sample Rate:</strong> <span id="sessionSampleRate">-</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Gain:</strong> <span id="sessionGain">-</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>File Size:</strong> <span id="sessionFileSize">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Export Session Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Export Format</label>
+                        <select class="form-select" id="exportFormat">
+                            <option value="csv">CSV (Comma Separated Values)</option>
+                            <option value="json">JSON</option>
+                            <option value="txt">Text (Tab Separated)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Data Range</label>
+                        <select class="form-select" id="exportRange">
+                            <option value="all">All Data</option>
+                            <option value="current">Current Time Position</option>
+                            <option value="selection">Time Selection</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="timeSelection" style="display: none;">
+                        <label class="form-label">Time Range</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input type="time" class="form-control" id="exportStartTime">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="time" class="form-control" id="exportEndTime">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmExport">Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Sessions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete all recording sessions?</p>
+                    <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/websocket-client.js"></script>
+    <script src="assets/js/spectrum-chart.js"></script>
+    <script src="assets/js/ui-controller.js"></script>
+    <script src="assets/js/app.js"></script>
+    
+    <script>
+        // History page specific functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            let sessions = [];
+            let currentSession = null;
+            let isPlaying = false;
+            let playbackInterval = null;
+            let currentSampleIndex = 0;
+            let playbackSpeed = 1;
+            let loopPlayback = false;
+            
+            // Elements
+            const sessionsList = document.getElementById('sessionsList');
+            const refreshBtn = document.getElementById('refreshSessions');
+            const clearBtn = document.getElementById('clearSessions');
+            const searchInput = document.getElementById('searchSessions');
+            const dateFilter = document.getElementById('dateFilter');
+            const durationFilter = document.getElementById('durationFilter');
+            const sessionTitle = document.getElementById('sessionTitle');
+            const playBtn = document.getElementById('playBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const timeSlider = document.getElementById('timeSlider');
+            const currentTimeSpan = document.getElementById('currentTime');
+            const totalTimeSpan = document.getElementById('totalTime');
+            const playbackSpeedSelect = document.getElementById('playbackSpeed');
+            const loopPlaybackCheck = document.getElementById('loopPlayback');
+            
+            // Session info elements
+            const sessionName = document.getElementById('sessionName');
+            const sessionDate = document.getElementById('sessionDate');
+            const sessionDuration = document.getElementById('sessionDuration');
+            const sessionSamples = document.getElementById('sessionSamples');
+            const sessionCenterFreq = document.getElementById('sessionCenterFreq');
+            const sessionSampleRate = document.getElementById('sessionSampleRate');
+            const sessionGain = document.getElementById('sessionGain');
+            const sessionFileSize = document.getElementById('sessionFileSize');
+            
+            // Load sessions function
+            async function loadSessions() {
+                try {
+                    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+                    refreshBtn.disabled = true;
+                    
+                    const response = await window.spectroApp.getHistory();
+                    sessions = response.sessions || [];
+                    
+                    renderSessions();
+                    
+                    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+                    refreshBtn.disabled = false;
+                    
+                } catch (error) {
+                    console.error('Error loading sessions:', error);
+                    sessionsList.innerHTML = '<div class="alert alert-danger">Error loading sessions</div>';
+                    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+                    refreshBtn.disabled = false;
+                }
+            }
+            
+            // Render sessions list
+            function renderSessions() {
+                if (sessions.length === 0) {
+                    sessionsList.innerHTML = '<div class="text-center py-3 text-muted">No sessions found</div>';
+                    return;
+                }
+                
+                // Apply filters
+                let filteredSessions = sessions;
+                
+                // Search filter
+                const searchTerm = searchInput.value.toLowerCase();
+                if (searchTerm) {
+                    filteredSessions = filteredSessions.filter(session => 
+                        (session.name || '').toLowerCase().includes(searchTerm) ||
+                        new Date(session.start_time).toLocaleString().toLowerCase().includes(searchTerm)
+                    );
+                }
+                
+                // Date filter
+                const dateValue = dateFilter.value;
+                if (dateValue) {
+                    const filterDate = new Date(dateValue);
+                    filteredSessions = filteredSessions.filter(session => {
+                        const sessionDate = new Date(session.start_time);
+                        return sessionDate.toDateString() === filterDate.toDateString();
+                    });
+                }
+                
+                // Duration filter
+                const durationValue = durationFilter.value;
+                if (durationValue) {
+                    filteredSessions = filteredSessions.filter(session => {
+                        const duration = session.duration || 0;
+                        switch (durationValue) {
+                            case 'short':
+                                return duration < 60;
+                            case 'medium':
+                                return duration >= 60 && duration <= 600;
+                            case 'long':
+                                return duration > 600;
+                            default:
+                                return true;
+                        }
+                    });
+                }
+                
+                // Sort by date (newest first)
+                filteredSessions.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+                
+                const html = filteredSessions.map(session => `
+                    <div class="session-item p-3 border rounded mb-2" data-session-id="${session.id}" style="cursor: pointer;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${session.name || 'Session ' + session.id}</strong>
+                                <div class="small text-muted">
+                                    ${new Date(session.start_time).toLocaleString()}
+                                </div>
+                                <div class="small">
+                                    ${(session.center_freq / 1e6).toFixed(2)} MHz • 
+                                    ${(session.sample_rate / 1e6).toFixed(2)} MS/s • 
+                                    ${formatDuration(session.duration || 0)}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">${session.sample_count || 0}</span>
+                                <div class="small text-muted mt-1">
+                                    ${formatFileSize(session.file_size || 0)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                sessionsList.innerHTML = html;
+                
+                // Add click handlers
+                document.querySelectorAll('.session-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const sessionId = parseInt(item.getAttribute('data-session-id'));
+                        loadSession(sessionId);
+                    });
+                });
+            }
+            
+            // Load specific session
+            async function loadSession(sessionId) {
+                try {
+                    const response = await window.spectroApp.getSession(sessionId);
+                    currentSession = response;
+                    
+                    // Update UI
+                    sessionTitle.textContent = currentSession.name || `Session ${sessionId}`;
+                    
+                    // Update session information
+                    sessionName.textContent = currentSession.name || 'Unnamed Session';
+                    sessionDate.textContent = new Date(currentSession.start_time).toLocaleString();
+                    sessionDuration.textContent = formatDuration(currentSession.duration || 0);
+                    sessionSamples.textContent = currentSession.sample_count || 0;
+                    sessionCenterFreq.textContent = `${(currentSession.center_freq / 1e6).toFixed(3)} MHz`;
+                    sessionSampleRate.textContent = `${(currentSession.sample_rate / 1e6).toFixed(2)} MS/s`;
+                    sessionGain.textContent = currentSession.gain || 'Auto';
+                    sessionFileSize.textContent = formatFileSize(currentSession.file_size || 0);
+                    
+                    // Update time displays
+                    totalTimeSpan.textContent = formatDuration(currentSession.duration || 0);
+                    
+                    // Enable controls
+                    playBtn.disabled = false;
+                    exportBtn.disabled = false;
+                    timeSlider.disabled = false;
+                    timeSlider.max = (currentSession.samples?.length || 1) - 1;
+                    timeSlider.value = 0;
+                    
+                    // Reset playback
+                    currentSampleIndex = 0;
+                    
+                    // Load first sample
+                    if (currentSession.samples && currentSession.samples.length > 0) {
+                        displaySample(0);
+                    }
+                    
+                    // Highlight selected session
+                    document.querySelectorAll('.session-item').forEach(item => {
+                        item.classList.remove('active');
+                        if (parseInt(item.getAttribute('data-session-id')) === sessionId) {
+                            item.classList.add('active');
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Error loading session:', error);
+                    if (window.spectroApp && window.spectroApp.uiController) {
+                        window.spectroApp.uiController.showNotification('Error loading session', 'error');
+                    }
+                }
+            }
+            
+            // Display sample at index
+            function displaySample(index) {
+                if (!currentSession || !currentSession.samples || index >= currentSession.samples.length) {
+                    return;
+                }
+                
+                const sample = currentSession.samples[index];
+                const spectrumData = {
+                    powers: sample.powers,
+                    center_freq: currentSession.center_freq,
+                    sample_rate: currentSession.sample_rate,
+                    timestamp: sample.timestamp
+                };
+                
+                // Update history chart
+                document.dispatchEvent(new CustomEvent('spectrumData', { detail: spectrumData }));
+                
+                // Update time display
+                const currentTime = (index / currentSession.samples.length) * (currentSession.duration || 0);
+                currentTimeSpan.textContent = formatDuration(currentTime);
+                timeSlider.value = index;
+                
+                currentSampleIndex = index;
+            }
+            
+            // Format duration in seconds to MM:SS
+            function formatDuration(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Playback controls
+            playBtn.addEventListener('click', () => {
+                if (!currentSession || !currentSession.samples) return;
+                
+                isPlaying = true;
+                playBtn.disabled = true;
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+                
+                const intervalMs = 100 / playbackSpeed; // Base 100ms interval
+                
+                playbackInterval = setInterval(() => {
+                    if (currentSampleIndex >= currentSession.samples.length - 1) {
+                        if (loopPlayback) {
+                            currentSampleIndex = 0;
+                        } else {
+                            stopPlayback();
+                            return;
+                        }
+                    } else {
+                        currentSampleIndex++;
+                    }
+                    
+                    displaySample(currentSampleIndex);
+                }, intervalMs);
+            });
+            
+            pauseBtn.addEventListener('click', () => {
+                if (playbackInterval) {
+                    clearInterval(playbackInterval);
+                    playbackInterval = null;
+                }
+                
+                isPlaying = false;
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+            });
+            
+            stopBtn.addEventListener('click', () => {
+                stopPlayback();
+            });
+            
+            function stopPlayback() {
+                if (playbackInterval) {
+                    clearInterval(playbackInterval);
+                    playbackInterval = null;
+                }
+                
+                isPlaying = false;
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+                
+                // Reset to beginning
+                currentSampleIndex = 0;
+                timeSlider.value = 0;
+                displaySample(0);
+            }
+            
+            // Time slider
+            timeSlider.addEventListener('input', (e) => {
+                const index = parseInt(e.target.value);
+                displaySample(index);
+            });
+            
+            // Playback speed
+            playbackSpeedSelect.addEventListener('change', (e) => {
+                playbackSpeed = parseFloat(e.target.value);
+                
+                // Restart playback with new speed if currently playing
+                if (isPlaying) {
+                    pauseBtn.click();
+                    playBtn.click();
+                }
+            });
+            
+            // Loop playback
+            loopPlaybackCheck.addEventListener('change', (e) => {
+                loopPlayback = e.target.checked;
+            });
+            
+            // Search and filter handlers
+            searchInput.addEventListener('input', renderSessions);
+            dateFilter.addEventListener('change', renderSessions);
+            durationFilter.addEventListener('change', renderSessions);
+            
+            // Refresh sessions
+            refreshBtn.addEventListener('click', loadSessions);
+            
+            // Clear sessions
+            clearBtn.addEventListener('click', () => {
+                const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                modal.show();
+            });
+            
+            // Export button
+            exportBtn.addEventListener('click', () => {
+                const modal = new bootstrap.Modal(document.getElementById('exportModal'));
+                modal.show();
+            });
+            
+            // Export functionality
+            document.getElementById('exportRange').addEventListener('change', (e) => {
+                const timeSelection = document.getElementById('timeSelection');
+                timeSelection.style.display = e.target.value === 'selection' ? 'block' : 'none';
+            });
+            
+            document.getElementById('confirmExport').addEventListener('click', () => {
+                exportSessionData();
+            });
+            
+            document.getElementById('confirmDelete').addEventListener('click', async () => {
+                try {
+                    await window.spectroApp.apiCall('/api/history/clear', 'POST');
+                    sessions = [];
+                    renderSessions();
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    modal.hide();
+                    
+                    if (window.spectroApp && window.spectroApp.uiController) {
+                        window.spectroApp.uiController.showNotification('All sessions deleted', 'success');
+                    }
+                } catch (error) {
+                    console.error('Error clearing sessions:', error);
+                    if (window.spectroApp && window.spectroApp.uiController) {
+                        window.spectroApp.uiController.showNotification('Error clearing sessions', 'error');
+                    }
+                }
+            });
+            
+            // Export session data
+            function exportSessionData() {
+                if (!currentSession) return;
+                
+                const format = document.getElementById('exportFormat').value;
+                const range = document.getElementById('exportRange').value;
+                
+                let data = currentSession.samples;
+                
+                // Filter data based on range
+                if (range === 'current') {
+                    data = [currentSession.samples[currentSampleIndex]];
+                } else if (range === 'selection') {
+                    // Implement time selection logic here
+                    // For now, use all data
+                }
+                
+                let content = '';
+                let filename = `session_${currentSession.id}`;
+                
+                switch (format) {
+                    case 'csv':
+                        content = 'timestamp,frequency,power\n';
+                        data.forEach(sample => {
+                            sample.powers.forEach((power, index) => {
+                                const freq = currentSession.center_freq + (index - sample.powers.length/2) * (currentSession.sample_rate / sample.powers.length);
+                                content += `${sample.timestamp},${freq},${power}\n`;
+                            });
+                        });
+                        filename += '.csv';
+                        break;
+                        
+                    case 'json':
+                        content = JSON.stringify({
+                            session: currentSession,
+                            data: data
+                        }, null, 2);
+                        filename += '.json';
+                        break;
+                        
+                    case 'txt':
+                        content = 'Timestamp\tFrequency\tPower\n';
+                        data.forEach(sample => {
+                            sample.powers.forEach((power, index) => {
+                                const freq = currentSession.center_freq + (index - sample.powers.length/2) * (currentSession.sample_rate / sample.powers.length);
+                                content += `${sample.timestamp}\t${freq}\t${power}\n`;
+                            });
+                        });
+                        filename += '.txt';
+                        break;
+                }
+                
+                // Download file
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+                modal.hide();
+            }
+            
+            // Initialize
+            setTimeout(() => {
+                loadSessions();
+            }, 1000);
+            
+            console.log('History page initialized');
+        });
+    </script>
+</body>
+</html>

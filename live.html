@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPECTRO</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="assets/img/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm" style="background: linear-gradient(90deg, #232526 0%, #0072ff 100%);">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="index.html">
+                <i class="bi bi-broadcast-pin"></i> SPECTRO WEB
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="live.html">
+                            <i class="bi bi-graph-up-arrow"></i> Live Spectrum
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="history.html">
+                            <i class="bi bi-clock-history"></i> History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="pattern-test.html">
+                            <i class="bi bi-broadcast"></i> Pattern Test
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav mb-2 mb-lg-0 align-items-center" style="gap:0.5rem;">
+                    <!-- Recording Status Indicator -->
+                    <li class="nav-item">
+                        <span class="badge bg-secondary" id="recordingStatus">Live Only</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="badge bg-primary" id="connectionStatus">Connecting...</span>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light rounded-pill px-3 me-2" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                            <i class="bi bi-gear"></i> Settings
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light rounded-pill px-3 me-2" data-bs-toggle="modal" data-bs-target="#deviceModal">
+                            <i class="bi bi-usb-plug"></i> Device
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary rounded-pill px-3" href="index.html" style="font-weight:600;">
+                            <i class="bi bi-house-door"></i> Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row my-2">
+            <div class="col-md-12">
+                <div class="spectrum-container">
+                    <canvas id="spectrumCanvas"></canvas>
+                    <div class="overlay-info">
+                        <div id="frequencyInfo"></div>
+                        <div id="sampleRateInfo"></div>
+                        <div id="lnbInfo"></div>
+                        <!-- Recording Info Overlay -->
+                        <div id="recordingInfo" style="color: #dc3545; display: none;">
+                            <i class="bi bi-record-circle-fill"></i> <span id="recordingInfoText">Recording...</span>
+                        </div>
+                        <div id="weatherSatInfo" style="color: #ffc107; display: none;">
+                            <i class="bi bi-cloud-sun"></i> Weather Satellite Mode Active
+                        </div>
+                        <div id="snrMonitorOverlay" style="display: none;">
+                            <div style="margin-bottom: 5px;">
+                                <strong>SNR Monitor</strong>
+                            </div>
+                            <div id="snrValue">SNR: -- dB</div>
+                            <div id="snrStatus">Status: --</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row my-2">
+            <div class="col-md-12">
+                <div class="waterfall-container">
+                    <canvas id="waterfallCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row my-2">
+            <div class="col-md-12">
+                <div class="control-bar">
+                    <div class="tuning-controls">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-sliders"></i></span>
+                            <input type="number" class="form-control" id="centerFreq" placeholder="Center Frequency (MHz)" step="0.001">
+                            <select class="form-select" id="sampleRate">
+                                <option value="0.25">0.25 MS/s</option>
+                                <option value="1.024">1.024 MS/s</option>
+                                <option value="1.536">1.536 MS/s</option>
+                                <option value="1.792">1.792 MS/s</option>
+                                <option value="1.92">1.92 MS/s</option>
+                                <option value="2.048">2.048 MS/s</option>
+                                <option value="2.4" selected>2.4 MS/s</option>
+                                <option value="2.56">2.56 MS/s</option>
+                                <option value="2.88">2.88 MS/s</option>
+                                <option value="3.2">3.2 MS/s</option>
+                            </select>
+                            <button class="btn btn-outline-primary" id="updateFreq">Update</button>
+                        </div>
+                    </div>
+                    
+                    <div class="gain-controls">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-volume-up"></i></span>
+                            <select class="form-select" id="gainSelect">
+                                <option value="auto">Auto Gain</option>
+                                <option value="0">0 dB</option>
+                                <option value="9">9 dB</option>
+                                <option value="14">14 dB</option>
+                                <option value="27">27 dB</option>
+                                <option value="37">37 dB</option>
+                                <option value="77">77 dB</option>
+                                <option value="87">87 dB</option>
+                                <option value="125">125 dB</option>
+                                <option value="144">144 dB</option>
+                                <option value="157">157 dB</option>
+                                <option value="166">166 dB</option>
+                                <option value="197">197 dB</option>
+                            </select>
+                            <button class="btn btn-outline-primary" id="updateGain">Set Gain</button>
+                        </div>
+                    </div>
+                    
+                    <div class="recording-controls">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-success" id="startRecording">
+                                <i class="bi bi-record-circle"></i> Record
+                            </button>
+                            <button class="btn btn-danger" id="stopRecording" disabled>
+                                <i class="bi bi-stop-circle"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="preset-controls">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-bookmark"></i> Presets
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" data-freq="88" data-name="FM Low">FM Radio (88 MHz)</a></li>
+                                <li><a class="dropdown-item" href="#" data-freq="108" data-name="FM High">FM Radio (108 MHz)</a></li>
+                                <li><a class="dropdown-item" href="#" data-freq="162.4" data-name="Weather">Weather Radio (162.4 MHz)</a></li>
+                                <li><a class="dropdown-item" href="#" data-freq="460" data-name="UHF">UHF (460 MHz)</a></li>
+                                <li><a class="dropdown-item" href="#" data-freq="1090" data-name="ADS-B">ADS-B (1090 MHz)</a></li>
+                                <li><a class="dropdown-item" href="#" data-freq="1420" data-name="L-Band">L-Band (1420 MHz)</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Backend URL</label>
+                        <input type="text" class="form-control" id="backendUrl" placeholder="http://localhost:5000">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">WebSocket URL</label>
+                        <input type="text" class="form-control" id="websocketUrl" placeholder="ws://localhost:5001">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Update Interval (ms)</label>
+                        <input type="number" class="form-control" id="updateInterval" value="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">FFT Size</label>
+                        <select class="form-select" id="fftSize">
+                            <option value="1024">1024</option>
+                            <option value="2048" selected>2048</option>
+                            <option value="4096">4096</option>
+                            <option value="8192">8192</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showWaterfall" checked>
+                            <label class="form-check-label" for="showWaterfall">
+                                Show Waterfall
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                            <label class="form-check-label" for="autoRefresh">
+                                Auto Refresh
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveSettings">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Device Modal -->
+    <div class="modal fade" id="deviceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Device Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Device Index</label>
+                        <select class="form-select" id="deviceIndex">
+                            <option value="0">Device 0</option>
+                            <option value="1">Device 1</option>
+                            <option value="2">Device 2</option>
+                            <option value="3">Device 3</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">LNB LO Frequency (MHz)</label>
+                        <input type="number" class="form-control" id="lnbLo" value="0" step="0.1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">LNB Preset</label>
+                        <select class="form-select" id="lnbPreset">
+                            <option value="none">None</option>
+                            <option value="universal_ku_low">Universal Ku Low (9.75 GHz)</option>
+                            <option value="universal_ku_high">Universal Ku High (10.6 GHz)</option>
+                            <option value="c_band">C-Band (5.15 GHz)</option>
+                            <option value="c_band_alt">C-Band Alt (5.75 GHz)</option>
+                            <option value="ku_band_dbs">Ku-Band DBS (11.25 GHz)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="biasTee">
+                            <label class="form-check-label" for="biasTee">
+                                Enable Bias Tee
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">PPM Error Correction</label>
+                        <input type="number" class="form-control" id="ppmError" value="0" step="0.1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="applyDevice">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/websocket-client.js"></script>
+    <script src="assets/js/spectrum-chart.js"></script>
+    <script src="assets/js/ui-controller.js"></script>
+    <script src="assets/js/app.js"></script>
+    
+    <script>
+        // Live page specific initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize preset handlers
+            document.querySelectorAll('.dropdown-item[data-freq]').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const freq = parseFloat(e.target.getAttribute('data-freq'));
+                    const name = e.target.getAttribute('data-name');
+                    
+                    document.getElementById('centerFreq').value = freq;
+                    
+                    // Show notification
+                    if (window.spectroApp && window.spectroApp.uiController) {
+                        window.spectroApp.uiController.showNotification(`Preset: ${name} (${freq} MHz)`, 'info');
+                    }
+                });
+            });
+            
+            // LNB preset handler
+            document.getElementById('lnbPreset').addEventListener('change', (e) => {
+                const preset = e.target.value;
+                const lnbLoInput = document.getElementById('lnbLo');
+                
+                const presets = {
+                    'none': 0,
+                    'universal_ku_low': 9750,
+                    'universal_ku_high': 10600,
+                    'c_band': 5150,
+                    'c_band_alt': 5750,
+                    'ku_band_dbs': 11250
+                };
+                
+                if (presets[preset] !== undefined) {
+                    lnbLoInput.value = presets[preset];
+                }
+            });
+            
+            // Sample rate change handler
+            document.getElementById('sampleRate').addEventListener('change', async () => {
+                if (window.spectroApp && window.spectroApp.uiController) {
+                    await window.spectroApp.uiController.updateSampleRate();
+                }
+            });
+            
+            // Waterfall toggle
+            document.getElementById('showWaterfall').addEventListener('change', (e) => {
+                const waterfallContainer = document.querySelector('.waterfall-container');
+                if (waterfallContainer) {
+                    waterfallContainer.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
+            
+            // Auto-refresh toggle
+            document.getElementById('autoRefresh').addEventListener('change', (e) => {
+                if (window.spectroApp && window.spectroApp.uiController) {
+                    window.spectroApp.uiController.autoRefresh = e.target.checked;
+                }
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+R: Start/Stop recording
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    const startBtn = document.getElementById('startRecording');
+                    const stopBtn = document.getElementById('stopRecording');
+                    
+                    if (!startBtn.disabled) {
+                        startBtn.click();
+                    } else if (!stopBtn.disabled) {
+                        stopBtn.click();
+                    }
+                }
+                
+                // Ctrl+U: Update frequency
+                if (e.ctrlKey && e.key === 'u') {
+                    e.preventDefault();
+                    document.getElementById('updateFreq').click();
+                }
+                
+                // Ctrl+G: Update gain
+                if (e.ctrlKey && e.key === 'g') {
+                    e.preventDefault();
+                    document.getElementById('updateGain').click();
+                }
+            });
+            
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            console.log('Live spectrum page initialized');
+        });
+    </script>
+</body>
+</html>
